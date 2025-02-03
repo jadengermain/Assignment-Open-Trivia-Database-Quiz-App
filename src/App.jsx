@@ -1,35 +1,71 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import HomePage from './components/HomePage';
+import QuestionForm from './components/QuestionForm';
+import ResultsSection from './components/ResultsSection';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+    const [userName, setUserName] = useState('');
+    const [category, setCategory] = useState('');
+    const [difficulty, setDifficulty] = useState('');
+    const [question, setQuestion] = useState(null);
+    const [userAnswer, setUserAnswer] = useState('');
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(null);
+    const [correctAnswer, setCorrectAnswer] = useState('');
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    const handleStartQuiz = (name, selectedCategory, selectedDifficulty) => {
+        setUserName(name);
+        setCategory(selectedCategory);
+        setDifficulty(selectedDifficulty);
+        fetchQuestion(selectedCategory, selectedDifficulty);
+    };
 
-export default App
+    const fetchQuestion = async (selectedCategory, selectedDifficulty) => {
+        try {
+            const response = await fetch(`https://opentdb.com/api.php?amount=1&category=${selectedCategory}&difficulty=${selectedDifficulty}&type=multiple`);
+            const data = await response.json();
+            setQuestion(data.results[0]);
+            setIsSubmitted(false);
+            setUserAnswer('');
+        } catch (error) {
+            console.error('Error fetching question:', error);
+        }
+    };
+
+    const handleAnswerSubmit = (answer) => {
+        setUserAnswer(answer);
+        setIsSubmitted(true);
+        setIsCorrect(answer === question.correct_answer);
+        setCorrectAnswer(question.correct_answer);
+    };
+
+    const handleRestart = () => {
+        setUserName('');
+        setCategory('');
+        setDifficulty('');
+        setQuestion(null);
+        setUserAnswer('');
+        setIsSubmitted(false);
+        setIsCorrect(null);
+        setCorrectAnswer('');
+    };
+
+    return (
+        <div className="App">
+            {!userName ? (
+                <HomePage onStartQuiz={handleStartQuiz} />
+            ) : isSubmitted === false && question ? (
+                <QuestionForm question={question} onAnswerSubmit={handleAnswerSubmit} />
+            ) : isSubmitted ? (
+                <ResultsSection 
+                    userName={userName} 
+                    isCorrect={isCorrect} 
+                    correctAnswer={correctAnswer} 
+                    onRestart={handleRestart} 
+                />
+            ) : null}
+        </div>
+    );
+};
+
+export default App;
